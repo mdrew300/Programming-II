@@ -17,7 +17,8 @@ from sklearn.metrics import (
 import streamlit as st
 
 # Call the dataframe "s"  
-s = pd.read_csv(r"C:\Users\mattd\Desktop\School\School Documents\Mod 2\Programming II\Final Project\social_media_usage.csv")
+s = pd.read_csv("social_media_usage.csv")
+
 
 # check the dimensions of the dataframe
 #s.shape
