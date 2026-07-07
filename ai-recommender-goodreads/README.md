@@ -36,4 +36,35 @@ capped by CF retrieval upstream, not by prompt wording.
 
 Python · Surprise · pandas · scikit-learn · Gemini API · Streamlit · Braintrust
 
-## Repo structure
+## Running it locally
+
+```bash
+git clone https://github.com/<you>/bookmatch.git
+cd bookmatch
+pip install -r requirements.txt
+
+# Gemini API key (required for the re-ranking layer)
+export GEMINI_API_KEY="your-key"        # or add to .streamlit/secrets.toml
+
+streamlit run app/goodreads_app.py
+```
+
+## Data
+
+Uses the Goodreads `Books.csv` and `Ratings.csv`. [Add: where you got them /
+Kaggle link.] Data files are not committed — download and place in `data/`.
+
+## Evaluation design (Project 3)
+
+Two system prompts (baseline vs. designed) run across 20 cases, each scored by two
+judges in Braintrust: **Ranking Fit** (do the top-3 picks match the request?) and
+**Explanation Quality** (are explanations specific and grounded?). Scale: 1 / 0.5 / 0.
+See `slides/Project_3.pdf` for prompts, judges, traces, and the ship recommendation.
+
+## Limitations
+
+- CF retrieval sets a ceiling on ranking quality; the LLM can't recommend a good
+  book that isn't in the candidate pool.
+- Re-ranker grounds explanations partly on its own knowledge of well-known titles;
+  metadata passed is title + author only.
+- Evaluation is 20 cases, single run, same model family for generation and judging.
