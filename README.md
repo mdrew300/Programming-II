@@ -4,7 +4,7 @@ Applied Python projects focused on data pipelines and transformation, statistica
 
 ## Overview
 
-This repository demonstrates practical analytical skills developed through rigorous applied coursework at Georgetown University's MSBA program. Projects span exploratory analysis, statistical modeling, and machine learning — with emphasis on translating raw data into actionable insights.
+This repository demonstrates practical analytical skills in Python for Machine/Deep Learning. Projects span exploratory analysis, statistical modeling, and machine learning — with emphasis on translating raw data into actionable insights.
 
 ## Key Projects:
 
