@@ -1,17 +1,18 @@
-# Data Analytics & Infrastructure
+# Applied Analytics and Machine Learning
 
-Applied Python projects focused on data engineering, statistical analysis, and machine learning workflows. Portfolio includes data cleaning/transformation pipelines, SQL integration, and predictive modeling on real-world datasets.
+Applied Python projects focused on data pipelines and transformation, statistical analysis, and machine learning workflows. Portfolio includes data cleaning/transformation pipelines, SQL integration, and predictive modeling on real-world datasets.
 
 # Overview
 
-This repository demonstrates practical data infrastructure skills developed through rigorous applied coursework at Georgetown University's MSBA program. Projects span data pipeline construction, exploratory analysis, statistical modeling, and machine learning — with emphasis on translating raw data into actionable insights.
+This repository demonstrates practical data pipelines and transformation skills developed through rigorous applied coursework at Georgetown University's MSBA program. Projects span data pipeline construction, exploratory analysis, statistical modeling, and machine learning — with emphasis on translating raw data into actionable insights.
 
 # Key Projects:
 
+- Recommender System: Collaborative Filtering with LLM re-ranking
+- Predictive Modeling: logistic regression classification for predicting LinkedIn use
 - XGBoost Modeling: Interest rate prediction with hyperparameter tuning and SHAP feature importance
 - Time-Series Forecasting: Counterfactual analysis isolating external shocks on demand
 - Classification Pipeline: Multi-model comparison (logistic regression, decision trees, random forests) on behavioral prediction
-- Data Cleaning & Transformation: Large dataset ingestion, validation, and preparation for downstream analysis
 
 # Technical Stack
 
