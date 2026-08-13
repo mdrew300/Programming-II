@@ -9,7 +9,7 @@ This repository demonstrates practical analytical skills developed through rigor
 ## Key Projects:
 
 - Recommender System: Collaborative Filtering with LLM re-ranking [GoodReads Recommender](./ai-recommender-goodreads)
-- Predictive Modeling: Logistic regression classification for predicting LinkedIn use [LinkedIn Predictor](https://linkedin-prediction-md.streamlit.app/))
+- Predictive Modeling: Logistic regression classification for predicting LinkedIn use [LinkedIn Predictor](https://linkedin-prediction-md.streamlit.app/)
 - XGBoost Modeling: Interest rate prediction with hyperparameter tuning and SHAP feature importance [LendingClub Interest Rate Predictor](./interest-rate-predictor)
 - Natural Language Processing: Topic modeling of Yelp hotel reviews for strategic recommendations for a new hotel in Chicago [Yelp Hotel Competitive Analysis](./yelp-hotel-competitive-analysis)
 - Cluster Modeling: K-Means clustering with PCA and UMAP dimension reduction for developing customer segments for tailored European travel packages [Customer Segmentation Analysis](./customer-segmentation-analysis)
