@@ -22,7 +22,7 @@ This repository demonstrates practical data infrastructure skills developed thro
 
 # About
 
-Built as part of Georgetown McDonough MSBA coursework, with focus on production-quality code and real-world problem-solving. Projects demonstrate both breadth (multiple modeling techniques) and depth (end-to-end workflows from ingestion to insight).
+Built as part of Georgetown McDonough MSBA coursework, with focus on reproducible analysis and real-world problem-solving. Projects demonstrate both breadth (multiple modeling techniques) and depth (end-to-end workflows from ingestion to insight).
 
 # Author
 
