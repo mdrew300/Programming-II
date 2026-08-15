@@ -99,6 +99,7 @@ def train_model():
     reader = Reader(rating_scale=(1, 5))
     data = Dataset.load_from_df(ratings[['user_id', 'book_id', 'rating']], reader)
     full_trainset = data.build_full_trainset()
+    # k=50 chosen for serving (more neighbors → smoother scores at inference); evaluation uses k=10
     model = KNNBasic(k=50, sim_options={"name": "pearson", "user_based": True}, verbose=False)
     model.fit(full_trainset)
     return model
@@ -213,7 +214,6 @@ elif st.session_state.page == 'recommendations':
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 🤖 Personalize with AI")
     preference = st.text_input("What are you in the mood for?", placeholder="e.g. a dark psychological thriller")
-    #api_key = st.text_input("Gemini API Key", type="password")
     api_key = st.secrets["GEMINI_API_KEY"]
 
     col1, col2 = st.columns(2)
@@ -221,8 +221,6 @@ elif st.session_state.page == 'recommendations':
         if st.button("Re-rank with AI ✨"):
             if not preference:
                 st.warning("Please enter a preference!")
-            elif not api_key:
-                st.warning("Please enter your Gemini API key!")
             else:
                 with st.spinner("Gemini is personalizing your picks..."):
                     picks = rerank_with_gemini(st.session_state.candidates, preference, api_key)
@@ -256,24 +254,25 @@ elif st.session_state.page == 'results':
                 </div>
             </div>
             """, unsafe_allow_html=True)
-        with col_ai:
-            st.markdown("<div class='section-label'>AI Re-ranked by Gemini ✨</div>", unsafe_allow_html=True)
-            # Build a lookup from title to image from candidates
-            img_lookup = {title: img for title, authors, score, img in st.session_state.candidates}
-            
-            for i, pick in enumerate(st.session_state.picks[:5], 1):
-                img = img_lookup.get(pick.title, '')
-                st.markdown(f"""
-                <div class='book-card' style='display:flex; gap:1rem; align-items:flex-start;'>
-                    <img src='{img}' style='width:50px; height:75px; border-radius:4px; object-fit:cover;'>
-                    <div>
-                        <div class='book-rank'>#{i}</div>
-                        <div class='book-title'>{pick.title}</div>
-                        <div class='book-author'>by {pick.authors}</div>
-                        <div class='book-reason'>{pick.reason}</div>
-                    </div>
+    with col_ai:
+        st.markdown("<div class='section-label'>AI Re-ranked by Gemini ✨</div>", unsafe_allow_html=True)
+        img_lookup = {title: img for title, _, _, img in st.session_state.candidates}
+        unmatched = [pick.title for pick in st.session_state.picks[:5] if pick.title not in img_lookup]
+        if unmatched:
+            st.caption(f"Note: {len(unmatched)} title(s) from AI response didn't match candidates exactly.")
+        for i, pick in enumerate(st.session_state.picks[:5], 1):
+            img = img_lookup.get(pick.title, '')
+            st.markdown(f"""
+            <div class='book-card' style='display:flex; gap:1rem; align-items:flex-start;'>
+                <img src='{img}' style='width:50px; height:75px; border-radius:4px; object-fit:cover;'>
+                <div>
+                    <div class='book-rank'>#{i}</div>
+                    <div class='book-title'>{pick.title}</div>
+                    <div class='book-author'>by {pick.authors}</div>
+                    <div class='book-reason'>{pick.reason}</div>
                 </div>
-                """, unsafe_allow_html=True)
+            </div>
+            """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
