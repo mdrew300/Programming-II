@@ -1,10 +1,18 @@
+from pathlib import Path
+
 import streamlit as st
 import pandas as pd
-import numpy as np
-from collections import defaultdict
 from surprise import KNNBasic, Dataset, Reader
 from pydantic import BaseModel, Field
 from google import genai
+
+# Resolve paths relative to this file, not the working directory.
+# Streamlit Cloud runs from the repo root, so bare filenames won't resolve.
+DATA_DIR = Path(__file__).parent
+
+# Number of CF candidates retrieved and re-ranked. Single source of truth —
+# keep the README and slides consistent with this value.
+TOP_N = 5
 
 # ── Page Config ──────────────────────────────────────────────────────────────
 st.set_page_config(page_title="BookMatch", page_icon="📚", layout="wide")
@@ -78,14 +86,37 @@ li[role="option"]:hover {
 """, unsafe_allow_html=True)
 
 # ── Load Data ────────────────────────────────────────────────────────────────
+def fix_mojibake(series):
+    """Repair UTF-8 text that was decoded as Latin-1 upstream.
+
+    The source CSV stores names like 'Gabriel Garc\xc3\xada M\xc3\xa1rquez' as
+    'GarcÃ­a MÃ¡rquez'. Round-tripping through latin-1 restores the original.
+    """
+    def _repair(value):
+        if not isinstance(value, str):
+            return value
+        try:
+            return value.encode('latin-1').decode('utf-8')
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            return value
+    return series.map(_repair)
+
+
 @st.cache_data
 def load_data():
-    books = pd.read_csv('Books.csv', low_memory=False)
-    ratings = pd.read_csv('Ratings.csv')
+    books = pd.read_csv(DATA_DIR / 'Books.csv', low_memory=False)
+    ratings = pd.read_csv(DATA_DIR / 'Ratings.csv')
+
+    for col in ('title', 'authors'):
+        if col in books.columns:
+            books[col] = fix_mojibake(books[col])
+
     books['language_code'] = books['language_code'].fillna('unknown')
     median_year = books['original_publication_year'].median()
-    books['original_publication_year'] = books['original_publication_year'].fillna(median_year).astype(int)
-    books = books.drop(columns=['isbn'])
+    books['original_publication_year'] = (
+        books['original_publication_year'].fillna(median_year).astype(int)
+    )
+    books = books.drop(columns=['isbn'], errors='ignore')
     return books, ratings
 
 books, ratings = load_data()
@@ -99,13 +130,14 @@ def train_model():
     reader = Reader(rating_scale=(1, 5))
     data = Dataset.load_from_df(ratings[['user_id', 'book_id', 'rating']], reader)
     full_trainset = data.build_full_trainset()
-    # k=50 chosen for serving (more neighbors → smoother scores at inference); evaluation uses k=10
+    # UBCF / Pearson / k=50 — the configuration selected in model comparison
+    # (highest Precision@10 and Recall@10; see README).
     model = KNNBasic(k=50, sim_options={"name": "pearson", "user_based": True}, verbose=False)
     model.fit(full_trainset)
     return model
 
 # ── Top-N Function ───────────────────────────────────────────────────────────
-def top_n_for_user(model, user_id, top_n=5):
+def top_n_for_user(model, user_id, top_n=TOP_N):
     seen = set(ratings.loc[ratings['user_id'] == user_id, 'book_id'])
     scored = [
         (book_lookup[b]['title'], book_lookup[b]['authors'], model.predict(user_id, b).est, book_lookup[b]['small_image_url'])
@@ -113,6 +145,39 @@ def top_n_for_user(model, user_id, top_n=5):
         if b not in seen and b in popular_books
     ]
     return sorted(scored, key=lambda x: -x[2])[:top_n]
+
+
+# ── Title Matching ───────────────────────────────────────────────────────────
+def normalize_title(title):
+    """Strip series suffixes and casing so 'Holes (Holes, #1)' matches 'Holes'.
+
+    The re-ranker is instructed to return exact candidate titles but often drops
+    the parenthetical series text, so exact-key lookup alone loses cover images.
+    """
+    return title.split('(')[0].strip().lower()
+
+
+PLACEHOLDER_IMG = (
+    "https://s.gr-assets.com/assets/nophoto/book/50x75-a91bf249278a81aabab721ef782c4a74.png"
+)
+
+
+def render_card(rank, title, authors, img, reason=None):
+    reason_html = f"<div class='book-reason'>{reason}</div>" if reason else ""
+    align = "flex-start" if reason else "center"
+    st.markdown(f"""
+    <div class='book-card' style='display:flex; gap:1rem; align-items:{align};'>
+        <img src='{img or PLACEHOLDER_IMG}'
+             onerror="this.onerror=null;this.src='{PLACEHOLDER_IMG}';"
+             style='width:50px; height:75px; border-radius:4px; object-fit:cover;'>
+        <div>
+            <div class='book-rank'>#{rank}</div>
+            <div class='book-title'>{title}</div>
+            <div class='book-author'>by {authors}</div>
+            {reason_html}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ── Gemini Re-ranking ────────────────────────────────────────────────────────
 class BookPick(BaseModel):
@@ -187,7 +252,7 @@ elif st.session_state.page == 'select_user':
         if st.button("Find My Books →"):
             with st.spinner("Finding your recommendations..."):
                 model = train_model()
-                st.session_state.candidates = top_n_for_user(model, user_id, top_n=5)
+                st.session_state.candidates = top_n_for_user(model, user_id, top_n=TOP_N)
                 st.session_state.user_id = user_id
             st.session_state.page = 'recommendations'
             st.rerun()
@@ -198,23 +263,23 @@ elif st.session_state.page == 'recommendations':
     st.markdown(f"<p style='text-align:center;color:#8aa4c8'>User {st.session_state.user_id}</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown("<div class='section-label'>Your Top 5 — Collaborative Filtering</div>", unsafe_allow_html=True)
-    for i, (title, authors, score, img) in enumerate(st.session_state.candidates[:5], 1):
-        st.markdown(f"""
-        <div class='book-card' style='display:flex; gap:1rem; align-items:center;'>
-            <img src='{img}' style='width:50px; height:75px; border-radius:4px; object-fit:cover;'>
-            <div>
-                <div class='book-rank'>#{i}</div>
-                <div class='book-title'>{title}</div>
-                <div class='book-author'>by {authors}</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='section-label'>Your Top {TOP_N} — Collaborative Filtering</div>",
+        unsafe_allow_html=True,
+    )
+    for i, (title, authors, score, img) in enumerate(st.session_state.candidates, 1):
+        render_card(i, title, authors, img)
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 🤖 Personalize with AI")
     preference = st.text_input("What are you in the mood for?", placeholder="e.g. a dark psychological thriller")
-    api_key = st.secrets["GEMINI_API_KEY"]
+    api_key = st.secrets.get("GEMINI_API_KEY")
+    if not api_key:
+        st.error(
+            "Gemini API key not configured. Add GEMINI_API_KEY to "
+            ".streamlit/secrets.toml (local) or the app's Secrets panel (Streamlit Cloud)."
+        )
+        st.stop()
 
     col1, col2 = st.columns(2)
     with col1:
@@ -222,12 +287,20 @@ elif st.session_state.page == 'recommendations':
             if not preference:
                 st.warning("Please enter a preference!")
             else:
-                with st.spinner("Gemini is personalizing your picks..."):
-                    picks = rerank_with_gemini(st.session_state.candidates, preference, api_key)
-                st.session_state.picks = picks
-                st.session_state.preference = preference
-                st.session_state.page = 'results'
-                st.rerun()
+                try:
+                    with st.spinner("Gemini is personalizing your picks..."):
+                        picks = rerank_with_gemini(st.session_state.candidates, preference, api_key)
+                except Exception as exc:
+                    st.error(f"Re-ranking request failed: {exc}")
+                    picks = None
+
+                if not picks:
+                    st.error("The model didn't return a usable ranking. Try again.")
+                else:
+                    st.session_state.picks = picks
+                    st.session_state.preference = preference
+                    st.session_state.page = 'results'
+                    st.rerun()
     with col2:
         if st.button("← Start Over"):
             st.session_state.page = 'home'
@@ -243,36 +316,31 @@ elif st.session_state.page == 'results':
 
     with col_cf:
         st.markdown("<div class='section-label'>Collaborative Filtering</div>", unsafe_allow_html=True)
-        for i, (title, authors, score, img) in enumerate(st.session_state.candidates[:5], 1):
-            st.markdown(f"""
-            <div class='book-card' style='display:flex; gap:1rem; align-items:center;'>
-                <img src='{img}' style='width:50px; height:75px; border-radius:4px; object-fit:cover;'>
-                <div>
-                    <div class='book-rank'>#{i}</div>
-                    <div class='book-title'>{title}</div>
-                    <div class='book-author'>by {authors}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+        for i, (title, authors, score, img) in enumerate(st.session_state.candidates, 1):
+            render_card(i, title, authors, img)
+
     with col_ai:
         st.markdown("<div class='section-label'>AI Re-ranked by Gemini ✨</div>", unsafe_allow_html=True)
-        img_lookup = {title: img for title, _, _, img in st.session_state.candidates}
-        unmatched = [pick.title for pick in st.session_state.picks[:5] if pick.title not in img_lookup]
+
+        exact_lookup = {title: img for title, _, _, img in st.session_state.candidates}
+        fuzzy_lookup = {
+            normalize_title(title): img for title, _, _, img in st.session_state.candidates
+        }
+
+        picks = st.session_state.picks[:TOP_N]
+        unmatched = [
+            p.title for p in picks
+            if p.title not in exact_lookup and normalize_title(p.title) not in fuzzy_lookup
+        ]
         if unmatched:
-            st.caption(f"Note: {len(unmatched)} title(s) from AI response didn't match candidates exactly.")
-        for i, pick in enumerate(st.session_state.picks[:5], 1):
-            img = img_lookup.get(pick.title, '')
-            st.markdown(f"""
-            <div class='book-card' style='display:flex; gap:1rem; align-items:flex-start;'>
-                <img src='{img}' style='width:50px; height:75px; border-radius:4px; object-fit:cover;'>
-                <div>
-                    <div class='book-rank'>#{i}</div>
-                    <div class='book-title'>{pick.title}</div>
-                    <div class='book-author'>by {pick.authors}</div>
-                    <div class='book-reason'>{pick.reason}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.caption(
+                f"Note: {len(unmatched)} title(s) returned by the model are not in the "
+                "candidate list."
+            )
+
+        for i, pick in enumerate(picks, 1):
+            img = exact_lookup.get(pick.title) or fuzzy_lookup.get(normalize_title(pick.title), '')
+            render_card(i, pick.title, pick.authors, img, reason=pick.reason)
 
     st.markdown("<br>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
