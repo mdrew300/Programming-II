@@ -68,7 +68,8 @@ streamlit run goodreads_app.py
 ## Data
 
 Goodreads books and ratings dataset (`Books.csv`, `Ratings.csv`), included in this folder.
-[ADD SOURCE — Kaggle link or wherever the course provided it]
+[Books](./Books.csv)
+[Ratings](./Ratings.csv)
 
 ## Limitations
 
