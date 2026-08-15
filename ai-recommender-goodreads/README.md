@@ -4,7 +4,8 @@ A Goodreads book recommender that pairs a collaborative-filtering engine with a
 Gemini re-ranking layer, plus a separate prompt-engineering study measuring whether
 structured re-ranking prompts actually improve output quality.
 
-Georgetown MSBA · AI Modeling in Practice · Team project with Jaci Goode and Stephanie Ong.
+Georgetown MSBA · AI Modeling in Practice · Team project with Jaci Goode and Stephanie Ong
+
 **My contribution:** exploratory data analysis and co-development of the Streamlit application.
 
 ![BookMatch — CF vs. AI-personalized results](screenshots/results.png)
@@ -67,9 +68,8 @@ streamlit run goodreads_app.py
 
 ## Data
 
-Goodreads books and ratings dataset (`Books.csv`, `Ratings.csv`), included in this folder.
-[Books](./Books.csv)
-[Ratings](./Ratings.csv)
+Goodreads books and ratings dataset ([Books](./Books.csv), [Ratings](./Ratings.csv)), included in this folder.
+
 
 ## Limitations
 
