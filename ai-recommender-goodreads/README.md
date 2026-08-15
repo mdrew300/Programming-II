@@ -10,6 +10,15 @@ Georgetown MSBA · AI Modeling in Practice · Team project with Jaci Goode and S
 
 ![BookMatch — CF vs. AI-personalized results](screenshots/results.png)
 
+## Repository contents
+
+| File | Purpose |
+|---|---|
+| `goodreads_app.py` | The Streamlit application — CF retrieval, Gemini re-ranking, UI |
+| `ai_recommender.py` | Model comparison and EDA; produces the CF metrics reported above |
+| `Books.csv`, `Ratings.csv` | Goodreads dataset |
+| `requirements.txt`, `runtime.txt` | Deployment configuration |
+
 ## What it does
 
 1. **Collaborative filtering** generates each user's top candidates from the Goodreads
