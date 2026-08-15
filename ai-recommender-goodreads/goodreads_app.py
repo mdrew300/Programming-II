@@ -163,22 +163,25 @@ PLACEHOLDER_IMG = (
 
 
 def render_card(rank, title, authors, img, reason=None):
-    reason_html = f"<div class='book-reason'>{reason}</div>" if reason else ""
     align = "flex-start" if reason else "center"
-    st.markdown(f"""
-    <div class='book-card' style='display:flex; gap:1rem; align-items:{align};'>
-        <img src='{img or PLACEHOLDER_IMG}'
-             onerror="this.onerror=null;this.src='{PLACEHOLDER_IMG}';"
-             style='width:50px; height:75px; border-radius:4px; object-fit:cover;'>
-        <div>
-            <div class='book-rank'>#{rank}</div>
-            <div class='book-title'>{title}</div>
-            <div class='book-author'>by {authors}</div>
-            {reason_html}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
+    reason_html = (
+        f"<div class='book-reason'>{reason}</div>" if reason else ""
+    )
+    html = (
+        f"<div class='book-card' style='display:flex; gap:1rem; align-items:{align};'>"
+        f"<img src='{img or PLACEHOLDER_IMG}' "
+        f"onerror=\"this.onerror=null;this.src='{PLACEHOLDER_IMG}';\" "
+        f"style='width:50px; height:75px; border-radius:4px; object-fit:cover;'>"
+        f"<div>"
+        f"<div class='book-rank'>#{rank}</div>"
+        f"<div class='book-title'>{title}</div>"
+        f"<div class='book-author'>by {authors}</div>"
+        f"{reason_html}"
+        f"</div>"
+        f"</div>"
+    )
+    st.markdown(html, unsafe_allow_html=True)
+    
 # ── Gemini Re-ranking ────────────────────────────────────────────────────────
 class BookPick(BaseModel):
     title: str = Field(description="Exact book title from the candidate list.")
