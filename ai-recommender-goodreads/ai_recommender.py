@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+"""Model comparison and EDA for the Goodreads recommender.
 
-# Project 2
-
+Produces the CF results reported in README.md. The deployed app is goodreads_app.py.
+"""
 ### Key Requirements
 1. Explore the dataset and provide any insights you find about users, reviews, and the books. This is an important step as unsupervised learning projects are exploratory by nature. Highlight patterns, anomalies, or questions the data raises that could affect modeling or recommendations.
 2. Compare and evaluate a set of recommendation models based on user-based and item-based collaborative filtering (in Python, using surprise). Include a simple popularity/mean baseline as a benchmark. Evaluate performance using RMSE for rating prediction and Precision@K / Recall@K for Top-N recommendations. Which model performs better and why? If your collaborative-filtering models do not outperform the baseline, discuss why (e.g., data sparsity, the baseline being a strong "popularity" recommender) and what that implies for model selection.
