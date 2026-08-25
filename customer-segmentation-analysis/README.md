@@ -37,7 +37,7 @@ The workflow combines dimensionality reduction, clustering, and supervised model
    - **Cross-method agreement:** Ward hierarchical clustering compared to K-Means via ARI + crosstab.
 5. **Cluster interpretation (supervised augmentation)** — a multinomial logistic regression and a depth-4 decision tree are trained to *predict* cluster membership. Their coefficients and Gini feature importances explain which attractions drive each segment (5-fold CV reported for sanity, not as a predictive deliverable).
 
-Multiple methods (PCA, t-SNE, UMAP, K-Means, hierarchical) converge on the same eight-segment structure, which is the main evidence that the segmentation reflects real behavior rather than method choice.
+Hierarchical clustering recovers broadly similar structure (ARI 0.51), supporting but not confirming the eight-segment solution.
 
 ## Results — Eight Segments
 
@@ -70,25 +70,11 @@ PCA reduces the 24 attractions to roughly six intuitive meta-categories that mir
 └── requirements.txt
 ```
 
-> Adjust paths/filenames to match what you commit. The notebook was developed in Google Colab and uses `files.upload()` for the dataset — see the run notes below.
-
 ## Running It
-
-### Google Colab (as written)
-1. Open the notebook in Colab.
-2. Run the setup cell, then run the upload cell and select `Travel_Review.xlsx` when prompted.
-3. Run the remaining cells top to bottom.
-
-### Local
 ```bash
 pip install -r requirements.txt
 jupyter lab   # or: jupyter notebook
 ```
-Then **replace the Colab upload cell** with a direct read:
-```python
-df = pd.read_excel("data/Travel_Review.xlsx")
-```
-(Remove the `from google.colab import files` / `files.upload()` lines.)
 
 ### `requirements.txt`
 ```
@@ -103,7 +89,6 @@ openpyxl
 ```
 
 ## Reproducibility Notes
-- Seeds are set (`np.random.seed(315)`; `random_state=42` for the embeddings/embedding-space K-Means; `random_state=315` for the full-feature K-Means). Results are stable across the 30-run ARI test, but exact cluster *index labels* can permute between runs — segment composition is what's stable, not the integer IDs.
 - t-SNE/UMAP are used for visualization; the reported K-Means segmentation is fit on the standardized feature space.
 
 ## Limitations
@@ -113,6 +98,7 @@ openpyxl
 
 ## Authors
 Saxa Team 4 — Matthew Drew, Anya Satyawadi, Jaci Goode, Prince Yeboah, Traore Rouguiatou.
+> My contribution: Exploratory Data and Primary Component Analyses
 
 Course: OPAN-6603, Georgetown University McDonough School of Business · Instructor: Dr. Tommy Jones.
 
